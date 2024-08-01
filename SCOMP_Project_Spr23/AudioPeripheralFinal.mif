@@ -1,0 +1,37 @@
+WIDTH=16;
+DEPTH=2048;
+
+ADDRESS_RADIX=HEX;
+DATA_RADIX=HEX;
+
+CONTENT BEGIN
+0000: 9050; -- 	IN     	Audio	; get 16-bit processed audio information from peripheral
+0001: 1018; -- 	STORE  	AudioData	; store audio data as 'AudioData'
+0002: 4816; -- 	AND		Bit0	; bit-mask to get isSnapDetected
+0003: 1019; -- 	STORE	isSnapDetected	; store to variable
+0004: 0818; -- 	LOAD	AudioData		; load raw audio bits
+0005: 6011; -- 	SHIFT   -1          ; shift out LSB to leave clap count bits
+0006: 101A; -- 	STORE	SnapCount	; store to variable
+0007: 9000; -- 	IN		Switches	; get value of switches
+0008: 101B; -- 	STORE	SwitchVal	; store to variable
+0009: 081A; -- 	LOAD	SnapCount	; load count of number of snaps
+000A: 9804; -- 	OUT		Hex0	    ; output SnapCount value on Hex1 display
+000B: 081B; -- 	LOAD	SwitchVal	; load value of switches
+000C: 9850; -- 	OUT		Audio	    ; output value of switches to audio peripheral and sets audio thershold
+000D: 0819; -- 	LOAD	isSnapDetected	; load isSnapDetected
+000E: 3810; -- 	JPOS	TurnOnAllLights	; turn on all lights if isSnapDetected is 1
+000F: 2813; -- 	JUMP	TurnOffAllLights	; turn off all lights if isSnapDetected is 0
+0010: 0817; -- 	LOAD	AllLightsOn		; load value to turn on all lights
+0011: 9801; -- 	OUT		LEDs	        ; turn all lights on
+0012: 2800; -- 	JUMP	Start			; go back to Start
+0013: B800; -- 	LOADI	0				; load value to turn off all lights
+0014: 9801; -- 	OUT		LEDs			; turn off all lights
+0015: 2800; -- 	JUMP	Start			; go back to Start
+0016: 0001; -- Bit0:        DW &B1
+0017: 03FF; -- AllLightsOn: DW	&B1111111111
+0018: 0000; -- AudioData:      DW 0
+0019: 0000; -- isSnapDetected:	DW 0	; LSB (also signals whether all lighs should be toggled)
+001A: 0000; -- SnapCount:	    DW 0	; 15 MSBs
+001B: 0000; -- SwitchVal:	    DW 0	; raw value of swtiches
+[001C..07FF] : 0000; -- [empty memory]
+END;

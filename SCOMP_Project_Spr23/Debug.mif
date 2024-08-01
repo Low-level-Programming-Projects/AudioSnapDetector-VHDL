@@ -1,0 +1,23 @@
+WIDTH=16;
+DEPTH=2048;
+
+ADDRESS_RADIX=HEX;
+DATA_RADIX=HEX;
+
+CONTENT BEGIN
+0000: 9050; -- 	IN     	Audio	; get 16-bit audio input from peripheral
+0001: 9804; -- 	OUT     Hex0;
+0002: 482A; -- 	AND		Bit0	; bit-mask to get isSnapDetected
+0003: 3805; -- 	JPOS	TurnOnAllLights   ; turn on all lights if isSnapDetected is 1
+0004: 2808; -- 	JUMP	TurnOffAllLights  ; otherwise jump to Finish
+0005: 082B; -- 	LOAD	AllLightsOn		; load value to turn on all lights
+0006: 9801; -- 	OUT		LEDs	        ; turn all lights on
+0007: 2800; -- 	JUMP	Start			; jump to Finish afterwards
+0008: B800; --     LOADI 0
+0009: 9801; -- 	OUT LEDs
+000A: 2800; -- 	JUMP Start
+[000B..0029] : 0000; -- [empty memory]
+002A: 0001; -- Bit0:        DW &B1
+002B: 03FF; -- AllLightsOn: DW	&B1111111111
+[002C..07FF] : 0000; -- [empty memory]
+END;

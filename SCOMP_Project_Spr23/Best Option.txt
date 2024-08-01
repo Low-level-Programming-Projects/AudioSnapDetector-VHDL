@@ -1,0 +1,91 @@
+-- AudioMonitor.vhd
+-- Created 2023
+--
+-- This SCOMP peripheral passes data from an input bus to SCOMP's I/O bus.
+
+library IEEE;
+library lpm;
+
+use IEEE.std_logic_1164.all;
+--use IEEE.std_logic_arith.all;
+--use IEEE.std_logic_unsigned.all;
+use lpm.lpm_components.all;
+use IEEE.numeric_std.all;
+
+entity AudioMonitor is
+port(
+    CS          : in  std_logic;
+    IO_WRITE    : in  std_logic;
+    SYS_CLK     : in  std_logic;  -- SCOMP's clock
+    RESETN      : in  std_logic;
+    AUD_DATA    : in  std_logic_vector(15 downto 0);
+    AUD_NEW     : in  std_logic;
+    IO_DATA     : inout  std_logic_vector(15 downto 0)
+);
+end AudioMonitor;
+
+architecture a of AudioMonitor is
+
+    signal out_en               : std_logic;
+    signal parsed_data          : std_logic_vector(15 downto 0);
+    signal output_data          : std_logic_vector(15 downto 0);
+	 signal loud_threshold       : std_logic_vector(15 downto 0) := "0000100000000000"; -- Audio magnitude threshold to be a clap
+	 signal quiet_threshold      : std_logic_vector(15 downto 0) := "0000000100000000"; -- Audio magnitude threshold to become quiet again
+	 signal audio_average        : std_logic_vector(15 downto 0);
+	 signal is_clap              : std_logic;
+	 signal is_loud              : std_logic;
+	 signal clap_count           : integer;
+	 signal averager_counter     : integer;
+	 signal ticks                : integer;
+	 constant max_snap_duration  : integer := 2;
+	 constant num_averages       : integer := 200; -- Experimentally-determined value
+
+begin
+
+    -- Latch data on rising edge of CS to keep it stable during IN
+    process (CS) begin
+        if rising_edge(CS) then
+            output_data <= parsed_data;
+        end if;
+    end process;
+    -- Drive IO_DATA when needed.
+    out_en <= CS AND ( NOT IO_WRITE );
+    with out_en select IO_DATA <=
+        output_data        when '1',
+        "ZZZZZZZZZZZZZZZZ" when others;
+
+    -- This template device just copies the input data
+    -- to IO_DATA by latching the data every time a new
+    -- value is ready.
+    process (RESETN, SYS_CLK)
+    begin
+        if (RESETN = '0') then
+				is_clap <= '0';
+				is_loud <= '0';
+				ticks <= 0;
+				averager_counter <= 0;
+				clap_count <= 0;
+        elsif (rising_edge(AUD_NEW)) then
+		      is_clap <= '0';
+				if (averager_counter < num_averages) then -- Rolling average calculator; nothing in the rest of the if block should run if averager isn't done
+					audio_average <= std_logic_vector(shift_right(signed(audio_average) + signed(AUD_DATA), 1)); -- Add the current average and the most recent input,
+					averager_counter <= averager_counter + 1;																		-- then shift right one to divide by two to take average
+				else
+					if (signed(audio_average) > signed(loud_threshold)) then  -- When sound is louder than threshold, begin counting duration
+						is_loud <= '1';
+						ticks <= ticks + 1;
+					elsif ((signed(audio_average) < signed(quiet_threshold)) and is_loud = '1') then -- If sound just happened, check for clap
+						is_loud <= '0';
+						if (ticks < max_snap_duration) then
+							is_clap <= '1';
+							clap_count <= clap_count + 1;
+						end if;
+						ticks <= 0;
+					end if;
+					averager_counter <= 0;
+					audio_average <= x"0000"; -- Done using these values in calculations, ready to reset
+				end if;
+        end if;
+    end process;
+	 parsed_data <= std_logic_vector(to_unsigned(clap_count, 15)) & is_clap; -- Concatenation (&) of output data
+end a;

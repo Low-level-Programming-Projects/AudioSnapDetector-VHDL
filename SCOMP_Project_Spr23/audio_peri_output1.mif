@@ -1,0 +1,46 @@
+WIDTH=16;
+DEPTH=2048;
+
+ADDRESS_RADIX=HEX;
+DATA_RADIX=HEX;
+
+CONTENT BEGIN
+0000: 9050; -- 	IN     	Audio	; get 16-bit processed audio information from peripheral
+0001: 1021; -- 	STORE  	AudioData	; store audio data as 'AudioData'
+0002: 481E; -- 	AND		Bit0	; bit-mask to get isSnapDetected
+0003: 1022; -- 	STORE	isSnapDetected	; store to variable
+0004: 0821; -- 	LOAD	AudioData		; load raw audio bits
+0005: 6011; -- 	SHIFT   -1          ; shift out LSB to leave clap count bits
+0006: 1023; -- 	STORE	SnapCount	; store to variable
+0007: 9000; -- 	IN		Switches	; get value of switches
+0008: 1024; -- 	STORE	SwitchVal	; store to variable	
+0009: 0824; -- 	LOAD SwitchVal
+000A: 9804; -- 	OUT Hex0
+000B: 9850; -- 	OUT Audio           ; a 10-bit vector (LSB) is received by the audio peripheral 
+000C: 9801; -- 	OUT LEDs            ; Debuggin
+000D: 0823; -- 	LOAD	SnapCount	; load count of number of snaps
+000E: 9805; -- 	OUT		Hex1	    ; output SnapCount value on Hex display
+000F: 0822; -- 	LOAD	isSnapDetected	; load isSnapDetected
+0010: 3812; -- 	JPOS	TurnOnAllLights	; turn on all lights if isSnapDetected is 1
+0011: 2816; -- 	JUMP	TurnOffAllLights	; turn off all lights if isSnapDetected is 0
+0012: 0820; -- 	LOAD	AllLightsOn		; load value to turn on all lights
+0013: 9801; -- 	OUT		LEDs	        ; turn all lights on
+0014: 8019; -- 	CALL	Delay	; delay by 0.67 s to see LEDs with naked eye
+0015: 2800; -- 	JUMP	Start	; go to Start
+0016: B800; -- 	LOADI	0				; load value to turn off all lights
+0017: 9801; -- 	OUT		LEDs			; turn off all lights
+0018: 2800; -- 	JUMP	Start	; go to Start
+0019: 9802; -- 	OUT    Timer
+001A: 9002; -- 	IN     Timer
+001B: 6FFD; -- 	ADDI   -3
+001C: 301A; -- 	JNEG   WaitingLoop
+001D: 8800; -- 	RETURN
+001E: 0001; -- Bit0:        DW &B1
+001F: FFFE; -- BitCount:    DW &B1111111111111110
+0020: 03FF; -- AllLightsOn: DW	&B1111111111
+0021: 0000; -- AudioData:      DW 0
+0022: 0000; -- isSnapDetected:	DW 0	; LSB (also signals whether all lighs should be on or not)
+0023: 0000; -- SnapCount:	    DW 0	; 15 MSB's
+0024: 0000; -- SwitchVal:	    DW 0	; raw value of swtiches
+[0025..07FF] : 0000; -- [empty memory]
+END;

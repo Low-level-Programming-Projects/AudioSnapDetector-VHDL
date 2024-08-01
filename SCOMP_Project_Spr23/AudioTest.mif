@@ -1,0 +1,22 @@
+WIDTH=16;
+DEPTH=2048;
+
+ADDRESS_RADIX=HEX;
+DATA_RADIX=HEX;
+
+CONTENT BEGIN
+0000: 9050; -- 	IN     Sound
+0001: 9804; -- 	OUT    Hex0
+0002: 8006; --     CALL   Abs
+0003: 6016; --     SHIFT  -6
+0004: 9801; --     OUT    LEDs
+0005: 2800; -- 	JUMP 0
+0006: 3008; -- 	JNEG   Negate
+0007: 8800; --     RETURN ; positive or zero; just return
+0008: 100C; -- 	STORE  NegTemp
+0009: 200C; --     SUB    NegTemp
+000A: 200C; --     SUB    NegTemp
+000B: 8800; -- 	RETURN
+000C: 0000; -- NegTemp: DW 0
+[000D..07FF] : 0000; -- [empty memory]
+END;
